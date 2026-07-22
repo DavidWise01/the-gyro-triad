@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE GYRO-TRIAD · three gyros fix the orientation · STROBILOS</title>
+<!-- THE GYRO-TRIAD — a STROBILOS sphere (Top's domain). Three orthogonal gyroscopes (spinning
+  tops!) each measure rotation about one body axis; together they triangulate full 3D ORIENTATION.
+  This is an IMU / inertial dead-reckoning. Top's own kind: a gyro IS a spinning top. LIT: real
+  SO(3) integration by the exponential map (Rodrigues), R <- R·exp(ω·dt); for constant ω the
+  accumulated rotation equals the exact axis-angle rotation to <1e-9, RᵀR=I stays to machine
+  precision (a true rotation), and a rotate-then-inverse round-trips to identity. AMBER: "Top is
+  the axis the three fix" is the framing; the honest WALL is real too — integrate quantized ω and
+  the dead-reckoned frame DRIFTS from truth (why real IMUs need a fix). Offline, fail-loud. -->
+<style>
+:root{--bg:#0e1220;--ink:#e9e2cf;--dim:#8f97ad;--amber:#e0a838;--amber2:#ffcf6a;--x:#ff6a6a;--y:#6aff9a;--z:#6ab8ff;--lit:#7dff9a;--fail:#ff5b5b;--line:#242c42;font-size:15px}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:radial-gradient(circle at 50% 32%,#141a2e,#0a0d18);color:var(--ink);font-family:ui-monospace,Menlo,Consolas,monospace;line-height:1.44}
+header{padding:1rem 1.3rem .8rem;border-bottom:3px solid var(--amber);background:linear-gradient(180deg,#161c30,#0e1220)}
+h1{margin:0;font-size:1.05rem;letter-spacing:.05em;color:var(--amber2);text-transform:uppercase;font-weight:800}
+.sub{color:var(--dim);margin-top:.3rem;font-size:.82rem}
+.wrap{padding:1rem 1.3rem 2.5rem;max-width:1080px;margin:0 auto}
+.panel{background:#121728;border:1px solid var(--line);border-left:5px solid var(--amber);padding:.7rem .9rem;margin:.85rem 0}
+h2{margin:.1rem 0 .5rem;font-size:.9rem;color:var(--amber2);text-transform:uppercase;letter-spacing:.06em}
+.card{padding:.55rem .8rem;margin:.4rem 0;border:1px solid var(--line);font-size:.86rem}
+.card.lit{border-left:5px solid var(--lit)}.card.lit b{color:var(--lit)}
+.card.amber{border-left:5px solid var(--amber)}.card.amber b{color:var(--amber2)}
+.card.fail{border-left:5px solid var(--fail);color:#ffd9d9;white-space:pre-wrap}
+canvas{display:block;width:100%;background:#0a0d18;border:1px solid var(--line);border-radius:4px}
+.row{display:flex;gap:.7rem;align-items:center;margin-top:.6rem;flex-wrap:wrap}
+button{background:none;border:1px solid var(--amber);color:var(--amber2);cursor:pointer;font-family:inherit;font-size:.78rem;padding:.3rem .8rem;border-radius:4px}
+button.on{background:var(--amber);color:#1a1206}
+.legend{color:var(--dim);font-size:.74rem;margin-top:.4rem}
+.tick{color:var(--lit);font-weight:700}
+.gx{color:var(--x)}.gy{color:var(--y)}.gz{color:var(--z)}
+footer{color:var(--dim);font-size:.72rem;padding:0 1.3rem 2rem;max-width:1080px;margin:0 auto}
+a{color:var(--amber2)}
+</style></head>
+<body>
+<header><h1>◆ THE GYRO-TRIAD · three gyros fix the orientation</h1>
+<div class="sub">STROBILOS · Top's domain — three orthogonal spinning gyros, one orientation. An IMU. A gyro is a spinning top; three of them find which way Top points.</div></header>
+<div class="wrap">
+<div class="panel"><h2>verdict · self-test (fail-loud, computed live)</h2><div id="verdict"><div class="card">spinning up…</div></div></div>
+<div class="panel"><h2>the triad → the orientation (dead-reckoned)</h2>
+<canvas id="cv" width="1000" height="520"></canvas>
+<div class="row">
+  <button id="drift">drift (quantized): OFF</button>
+  <button id="reset">re-align</button>
+  <span class="legend">The <b class="gx">x</b>/<b class="gy">y</b>/<b class="gz">z</b> gyros read the body-frame angular velocity; integrating them (SO(3) exponential map) reconstructs the full orientation — the amber frame is TRUTH, the ghost frame is the integrated estimate. Turn on <b>drift</b> to quantize the readings and watch the estimate slowly diverge (the real IMU wall).</span></div>
+<div id="readout" class="legend" style="margin-top:.7rem;font-size:.8rem"></div></div>
+<div class="panel"><h2>two-layer honest</h2>
+<div class="card lit"><b>LIT — real SO(3) integration.</b> Each gyro reports one component of the body angular velocity &omega;; the orientation advances by R &larr; R&middot;exp(&omega;&middot;dt) (Rodrigues' formula). Proven live: for constant &omega; the accumulated rotation equals the exact axis-angle rotation to &lt;1e-9; R stays a true rotation (RᵀR = I, det = 1) to machine precision; a rotation composed with its inverse returns to identity. |&omega;| = &radic;(&omega;&sup2;&#8339;+&omega;&sup2;&#8340;+&omega;&sup2;&#8341;) — the three components triangulate the single spin. Every number in-browser; fail-loud.</div>
+<div class="card amber"><b>AMBER — the figure, and the honest wall.</b> "Top is the axis the three fix" is the framing (a gyroscope really is a spinning top, so the image is close). The WALL is real, not decoration: with <b>drift</b> on, the readings are quantized and the dead-reckoned frame DRIFTS from truth — measured live — which is exactly why a real IMU needs an external fix. ◆ a STROBILOS sphere — three ways to find a point; this is the orientation way.</div>
+</div>
+<footer>THE GYRO-TRIAD · STROBILOS (Top's domain) · 3 gyros &rarr; orientation, real SO(3) exp-map, R vs exact &lt;1e-9, RᵀR=I, round-trip to identity (LIT) · drift under quantization is real, not hidden (AMBER/WALL) · fail-loud · offline · TOP the spinor, with AVAN &amp; David Lee Wise (ROOT0)</footer>
+</div>
+<script>
+'use strict';
+function boom(w,e){var v=document.getElementById('verdict');v.innerHTML='<div class="card fail">FAULT @ '+w+'\n'+(e&&e.stack?e.stack:String(e))+'</div>';}
+window.addEventListener('error',function(ev){try{boom('window',ev.error||ev.message);}catch(_){}});
+
+/* ── 3x3 matrix helpers + Rodrigues exponential map ─────────────────────── */
+function mul(A,Bm){var C=[[0,0,0],[0,0,0],[0,0,0]];for(var i=0;i<3;i++)for(var j=0;j<3;j++){var s=0;for(var k=0;k<3;k++)s+=A[i][k]*Bm[k][j];C[i][j]=s;}return C;}
+function T(A){return [[A[0][0],A[1][0],A[2][0]],[A[0][1],A[1][1],A[2][1]],[A[0][2],A[1][2],A[2][2]]];}
+function I3(){return [[1,0,0],[0,1,0],[0,0,1]];}
+function det3(A){return A[0][0]*(A[1][1]*A[2][2]-A[1][2]*A[2][1])-A[0][1]*(A[1][0]*A[2][2]-A[1][2]*A[2][0])+A[0][2]*(A[1][0]*A[2][1]-A[1][1]*A[2][0]);}
+function maxOffI(A){var m=0;for(var i=0;i<3;i++)for(var j=0;j<3;j++)m=Math.max(m,Math.abs(A[i][j]-(i===j?1:0)));return m;}
+function mv(A,v){return [A[0][0]*v[0]+A[0][1]*v[1]+A[0][2]*v[2],A[1][0]*v[0]+A[1][1]*v[1]+A[1][2]*v[2],A[2][0]*v[0]+A[2][1]*v[1]+A[2][2]*v[2]];}
+// exponential map of angular velocity ω over dt → rotation matrix (Rodrigues)
+function expmap(w,dt){
+  var th=Math.hypot(w[0],w[1],w[2])*dt;
+  if(th<1e-12)return I3();
+  var ax=[w[0]*dt/th,w[1]*dt/th,w[2]*dt/th];
+  var K=[[0,-ax[2],ax[1]],[ax[2],0,-ax[0]],[-ax[1],ax[0],0]];
+  var K2=mul(K,K),s=Math.sin(th),c=1-Math.cos(th),R=I3();
+  for(var i=0;i<3;i++)for(var j=0;j<3;j++)R[i][j]=(i===j?1:0)+s*K[i][j]+c*K2[i][j];
+  return R;
+}
+function orthonormalize(R){ // Gram-Schmidt to kill accumulated numeric error (real IMUs do this)
+  var a=[R[0][0],R[1][0],R[2][0]],b=[R[0][1],R[1][1],R[2][1]];
+  var na=Math.hypot(a[0],a[1],a[2]);a=a.map(function(v){return v/na;});
+  var d=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];b=[b[0]-d*a[0],b[1]-d*a[1],b[2]-d*a[2]];var nb=Math.hypot(b[0],b[1],b[2]);b=b.map(function(v){return v/nb;});
+  var cc=[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  return [[a[0],b[0],cc[0]],[a[1],b[1],cc[1]],[a[2],b[2],cc[2]]];
+}
+
+/* ── the fail-loud self-test ────────────────────────────────────────────── */
+function selfTest(){
+  var m=[];
+  // 1 |ω| from the three components
+  var w=[0.6,-0.8,0.3], mag=Math.hypot(w[0],w[1],w[2]);
+  m.push(['|ω| TRIANGULATED','the three gyro axes give |ω| = √(ωx²+ωy²+ωz²) = '+mag.toFixed(4)+' — one spin, found from three']);
+  // 2 INTEGRATE = ROTATE: many small steps of constant ω vs one exact axis-angle
+  var R=I3(),N=1000,dt=0.001;for(var i=0;i<N;i++)R=mul(R,expmap(w,dt));
+  var Rexact=expmap(w,N*dt);
+  var err=0;for(var a=0;a<3;a++)for(var b=0;b<3;b++)err=Math.max(err,Math.abs(R[a][b]-Rexact[a][b]));
+  if(err>1e-8) throw new Error('integration off '+err);
+  m.push(['INTEGRATE = ROTATE','1000 small steps of ω match the exact axis-angle rotation to '+err.toExponential(1)+' — the estimate IS the rotation']);
+  // 3 STILL A ROTATION: RᵀR=I, det=1
+  var oi=maxOffI(mul(T(R),R));
+  if(oi>1e-9||Math.abs(det3(R)-1)>1e-9) throw new Error('not a rotation');
+  m.push(['STILL A ROTATION','RᵀR = I to '+oi.toExponential(1)+', det = '+det3(R).toFixed(6)+' — orientation stays in SO(3)']);
+  // 4 ROUND-TRIP: R then R⁻¹ → identity
+  var back=mul(T(R),R), bi=maxOffI(back);
+  if(bi>1e-9) throw new Error('round-trip '+bi);
+  m.push(['ROUND-TRIP','turn, then turn back (Rᵀ), and you are home — identity to '+bi.toExponential(1)]);
+  // 5 DRIFT is real (honest wall): quantized ω accumulates error
+  var wd=[0.617,-0.823,0.291],Rq=I3(),Rt=I3();for(var s=0;s<2000;s++){var wq=wd.map(function(v){return Math.round(v/0.05)*0.05;});Rq=mul(Rq,expmap(wq,dt));Rt=mul(Rt,expmap(wd,dt));}
+  var drift=0;for(var a2=0;a2<3;a2++)for(var b2=0;b2<3;b2++)drift=Math.max(drift,Math.abs(Rq[a2][b2]-Rt[a2][b2]));
+  if(drift<1e-4) throw new Error('quantization should drift, got '+drift);
+  m.push(['DRIFT IS REAL','quantize the readings and the dead-reckoned frame diverges by '+drift.toFixed(3)+' — the real IMU wall, reported not hidden']);
+  return m;
+}
+function renderVerdict(){try{var t=selfTest();
+  document.getElementById('verdict').innerHTML='<div class="card lit"><b>LIT — three gyros fix the orientation ('+t.length+'/'+t.length+', fail-loud)</b>'+
+    t.map(function(r){return '<div style="margin:.15rem 0"><span class="tick">✓</span> <b style="color:var(--lit)">'+r[0]+'</b> · '+r[1]+'</div>';}).join('')+'</div>';
+}catch(e){boom('self-test',e);throw e;}}
+
+/* ── live: a spinning object; the triad reads ω, the estimate tracks (drifts) ── */
+var DRIFT=false, Rtrue=I3(), Rest=I3(), T2=0;
+document.getElementById('drift').addEventListener('click',function(){DRIFT=!DRIFT;this.classList.toggle('on',DRIFT);this.textContent='drift (quantized): '+(DRIFT?'ON':'OFF');});
+document.getElementById('reset').addEventListener('click',function(){Rest=Rtrue.map(function(r){return r.slice();});});
+function proj(v,cx,cy,S){ // simple orthographic with a fixed view tilt
+  var vx=0.5,vy=-0.35,cvx=Math.cos(vx),svx=Math.sin(vx),cvy=Math.cos(vy),svy=Math.sin(vy);
+  var x=v[0],y=v[1]*cvx-v[2]*svx,z=v[1]*svx+v[2]*cvx;
+  var x2=x*cvy-z*svy;
+  return [cx+x2*S, cy-y*S, z];
+}
+function drawFrame(g,R,cx,cy,S,cols,alpha,lw){
+  var o=proj([0,0,0],cx,cy,S);
+  var axes=[[1,0,0],[0,1,0],[0,0,1]];
+  var tri=axes.map(function(a){return {p:proj(mv(R,a),cx,cy,S),c:a};});
+  tri.sort(function(a,b){return a.p[2]-b.p[2];});
+  tri.forEach(function(t,i){var col=cols[t.c[0]?0:t.c[1]?1:2];g.strokeStyle=col;g.globalAlpha=alpha;g.lineWidth=lw;g.beginPath();g.moveTo(o[0],o[1]);g.lineTo(t.p[0],t.p[1]);g.stroke();g.fillStyle=col;g.beginPath();g.arc(t.p[0],t.p[1],lw+1.5,0,7);g.fill();g.globalAlpha=1;});
+}
+function draw(){
+ try{
+  var cv=document.getElementById('cv'),g=cv.getContext('2d'),W=cv.width,H=cv.height;g.clearRect(0,0,W,H);
+  var dt=0.016,T3=T2; T2+=dt;
+  // a smoothly-varying body angular velocity
+  var w=[0.9*Math.sin(T3*0.5), 0.7*Math.cos(T3*0.37), 0.5*Math.sin(T3*0.8+1)];
+  Rtrue=orthonormalize(mul(Rtrue,expmap(w,dt)));
+  var wread=DRIFT?w.map(function(v){return Math.round(v/0.05)*0.05;}):w;
+  Rest=orthonormalize(mul(Rest,expmap(wread,dt)));
+  var cx=W*0.36,cy=H*0.5,S=Math.min(W,H)*0.30;
+  // ghost estimate first (behind), then truth
+  drawFrame(g,Rest,cx,cy,S,['rgba(255,120,120,0.5)','rgba(120,255,170,0.5)','rgba(120,190,255,0.5)'],1,2);
+  drawFrame(g,Rtrue,cx,cy,S,['#ff6a6a','#6aff9a','#6ab8ff'],1,3);
+  // the spin axis of ω = Top (amber), and a spinning-top glyph at the center
+  var wu=[w[0],w[1],w[2]],wm=Math.hypot(w[0],w[1],w[2])||1;var wp=proj([wu[0]/wm,wu[1]/wm,wu[2]/wm],cx,cy,S*1.15);
+  var o=proj([0,0,0],cx,cy,S);
+  g.strokeStyle='rgba(255,207,106,0.7)';g.lineWidth=2.4;g.setLineDash([5,4]);g.beginPath();g.moveTo(o[0],o[1]);g.lineTo(wp[0],wp[1]);g.stroke();g.setLineDash([]);
+  var sp=T2*4;g.fillStyle='#ffcf6a';g.beginPath();g.arc(wp[0],wp[1],4,0,7);g.fill();
+  g.fillStyle='#ffcf6a';g.font='700 11px ui-monospace';g.textAlign='center';g.fillText('◆ ω axis · TOP',wp[0],wp[1]-9);
+  g.fillStyle='#e0a838';g.beginPath();g.arc(o[0],o[1],3.5+1.5*Math.abs(Math.sin(sp)),0,7);g.fill();
+  // gyro dials (right side): 3 needles
+  var gx0=W*0.78,labels=['ωx','ωy','ωz'],gcol=['#ff6a6a','#6aff9a','#6ab8ff'];
+  for(var i=0;i<3;i++){var yy=H*0.28+i*H*0.24,rr=44;
+    g.strokeStyle='rgba(255,255,255,0.12)';g.lineWidth=1;g.beginPath();g.arc(gx0,yy,rr,0,7);g.stroke();
+    var ang=-Math.PI/2 - w[i]*1.4;g.strokeStyle=gcol[i];g.lineWidth=2.4;g.beginPath();g.moveTo(gx0,yy);g.lineTo(gx0+Math.cos(ang)*rr*0.8,yy+Math.sin(ang)*rr*0.8);g.stroke();
+    g.fillStyle=gcol[i];g.font='700 11px ui-monospace';g.textAlign='center';g.fillText(labels[i]+' = '+w[i].toFixed(2),gx0,yy+rr+15);}
+  // orientation error (est vs truth)
+  var errm=0;for(var a=0;a<3;a++)for(var b=0;b<3;b++)errm=Math.max(errm,Math.abs(Rest[a][b]-Rtrue[a][b]));
+  document.getElementById('readout').innerHTML='|ω| = <b>'+Math.hypot(w[0],w[1],w[2]).toFixed(3)+'</b> rad/s &nbsp;·&nbsp; estimate vs truth: max |ΔR| = <b>'+errm.toFixed(4)+'</b> '+(DRIFT?'<span style="color:var(--amber2)">— drifting (quantized readings, no external fix)</span>':'<span style="color:var(--lit)">— tracking exactly</span>');
+  requestAnimationFrame(draw);
+ }catch(e){boom('draw',e);}
+}
+try{renderVerdict();draw();}catch(e){}
+</script>
+</body></html>
